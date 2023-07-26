@@ -1,0 +1,307 @@
+# id user - primary key, autoincrement
+# username - korisnicko ime
+# password - lozinka (pin - 4 znamenke)
+# name - ime i prezime?
+# status - active/disabled/vacation
+# role - admin/client/guest
+ 
+# naziv baze: smartkey.db
+# naziv tablice: users
+ 
+# opcija: korisnik nakon prvog logiranja mora promijeniti pin, bas kao i admin
+# vremenski okviri za guest tip korisnika
+
+import sqlite3
+import tkinter as tk
+from tkinter import messagebox
+ 
+database_name='smartkey.db'
+create_table_query='''
+CREATE TABLE IF NOT EXISTS users (
+id INTEGER PRIMARY KEY,
+username TEXT NOT NULL UNIQUE,
+password TEXT NOT NULL,
+name TEXT NOT NULL, 
+status TEXT NOT NULL,
+role TEXT NOT NULL
+);
+'''
+
+admin_user=('admin','1234','Admin','active','admin')
+
+insert_into_table_query='''
+INSERT INTO users (username, password, name, status, role)
+VALUES (?, ?, ?, ?, ?)
+'''
+
+select_table_query_login='''
+SELECT * FROM users WHERE username=? AND password=?
+'''
+
+select_table_query='''
+SELECT * FROM users
+'''
+
+update_table_query='''
+UPDATE users 
+SET password = ?,
+name = ?,
+status = ?,
+role = ?
+WHERE username = ?
+'''
+
+delete_table_query='''
+DELETE FROM users WHERE username = ?
+'''
+    
+def create_db():
+    try:
+        sc=sqlite3.connect(database_name)
+        cursor=sc.cursor()
+        cursor.execute(create_table_query)
+        sc.commit()
+        cursor.close()
+    except sqlite3.Error as err:
+        print(f'Dogodila se greska {err}')
+    finally:
+        if sc:
+            sc.close()
+
+def check_user_admin():
+    #provjera korisnika user i dodavanje ako nije tu
+    try:
+        sc=sqlite3.connect(database_name)
+        cursor=sc.cursor()
+        cursor.execute(select_table_query_login, (admin_user[0],admin_user[1]))
+        records=cursor.fetchone()
+        cursor.close()
+        #print(admin_user[0],records[1])
+        if admin_user[0] != records[1]:
+            try:
+                sc=sqlite3.connect(database_name)
+                cursor=sc.cursor()
+                cursor.execute(insert_into_table_query,admin_user)
+                sc.commit()
+                cursor.close()
+            except sqlite3.Error as err:
+                print(f'Dogodila se greska {err}')
+            finally:
+                if sc:
+                    sc.close()
+    except sqlite3.Error as err:
+        print(f'Dogodila se greska {err}')
+    finally:
+        if sc:
+            sc.close()
+
+
+
+def add_new_user():
+    #novi korisnik u bazi
+    username=input('Username: ')
+    password=input('Password/Pin: ')
+    name=input('Name: ')
+    status=input('Status (active/disabled): ')
+    role=input('Role (admin/client/guest): ')
+    new_user=(username,password,name,status,role)
+    try:
+        sc=sqlite3.connect(database_name)
+        cursor=sc.cursor()
+        cursor.execute(insert_into_table_query,new_user)
+        sc.commit()
+        cursor.close()
+    except sqlite3.Error as err:
+        print(f'Dogodila se greska {err}')
+    finally:
+        if sc:
+            sc.close()
+
+def delete_user_username():
+    global username_to_delete_entry
+    #izbrisi korisnika iz baze prema username-u
+    delete_user=username_to_delete_entry.get()
+    try:
+        sc=sqlite3.connect(database_name)
+        cursor=sc.cursor()
+        cursor.execute(delete_table_query, (delete_user,))
+        sc.commit()
+        cursor.close()
+        messagebox.showinfo(f"Uspješno ste izbrisali {delete_user}")
+    except sqlite3.Error as err:
+        messagebox.showerror(f'Dogodila se greska {err}')
+    finally:
+        if sc:
+            sc.close()
+    
+    
+def update_user():    
+    #update-aj korisnika u bazi prema username-u
+    
+    username=input('Username: ')
+    password=input('Password/Pin: ')
+    name=input('Name: ')
+    status=input('Status (active/disabled): ')
+    role=input('Role (admin/client/guest): ')
+    try:
+        sc=sqlite3.connect(database_name)
+        cursor=sc.cursor()
+        cursor.execute(update_table_query, (password,name,status,role,username))
+        sc.commit()
+        cursor.close()
+    except sqlite3.Error as err:
+        print(f'Dogodila se greska {err}, korisnik nije pronadjen')
+    finally:
+        if sc:
+            sc.close()
+    
+def print_user():
+    #ispis korisnika iz baze
+    try:
+        sc=sqlite3.connect(database_name)
+        cursor=sc.cursor()
+        cursor.execute(select_table_query)
+        records=cursor.fetchall()
+        cursor.close()
+        for record in records:
+            print(record)
+    except sqlite3.Error as err:
+        print(f'Dogodila se greška {err}')
+    finally:
+        if sc:
+            sc.close()
+ 
+ 
+            
+# Function to handle the Add New User button click
+def add_user_button_click():
+    global username_entry, password_entry, name_entry, status_entry, role_entry
+    username = username_entry.get()
+    password = password_entry.get()
+    name = name_entry.get()
+    status = status_entry.get()
+    role = role_entry.get()
+    new_user = (username, password, name, status, role)
+
+    try:
+        sc = sqlite3.connect(database_name)
+        cursor = sc.cursor()
+        cursor.execute(insert_into_table_query, new_user)
+        sc.commit()
+        cursor.close()
+        messagebox.showinfo("Success", "User added successfully!")
+    except sqlite3.Error as err:
+        messagebox.showerror("Error", f"Error adding user: {err}")
+    finally:
+        if sc:
+            sc.close()
+
+# Function to handle the Print Users button click
+def print_users_button_click():
+    try:
+        sc = sqlite3.connect(database_name)
+        cursor = sc.cursor()
+        cursor.execute(select_table_query)
+        records = cursor.fetchall()
+        cursor.close()
+
+        output_text.delete(1.0, tk.END)
+        for record in records:
+            output_text.insert(tk.END, str(record) + "\n")
+    except sqlite3.Error as err:
+        messagebox.showerror("Error", f"Error fetching users: {err}")
+    finally:
+        if sc:
+            sc.close()
+            
+def login():
+    username = username_entry.get()
+    password = password_entry.get()
+
+    # Verify the login credentials (You can add your logic here)
+    # For demonstration purposes, we'll use a simple condition
+    if username == "admin" and password == "password":
+        show_admin_features()
+    else:
+        messagebox.showerror("Error", "Invalid credentials")
+
+def show_admin_features():
+    login_frame.pack_forget()  # Hide the login frame
+    admin_frame.pack()  # Show the admin frame
+
+# Tkinter GUI setup
+root = tk.Tk()
+root.title("Smart Key")
+
+# Create login frame
+login_frame = tk.Frame(root)
+login_frame.pack(padx=20, pady=20)
+
+username_label = tk.Label(login_frame, text="Username:")
+username_label.pack()
+username_entry = tk.Entry(login_frame)
+username_entry.pack()
+
+password_label = tk.Label(login_frame, text="Password:")
+password_label.pack()
+password_entry = tk.Entry(login_frame, show="*")  # Show * for password entry
+password_entry.pack()
+
+login_button = tk.Button(login_frame, text="Login", command=login)
+login_button.pack()
+
+# Create admin frame
+admin_frame = tk.Frame(root)
+# Hide the admin frame initially, it will be shown after successful login
+admin_frame.pack_forget()
+
+# Create Labels and Entry widgets for user input
+username_label = tk.Label(admin_frame, text="Username:")
+username_label.grid(row=0, column=0, padx=5, pady=5)
+username_entry = tk.Entry(admin_frame)
+username_entry.grid(row=0, column=1, padx=5, pady=5)
+
+password_label = tk.Label(admin_frame, text="Paswrod:")
+password_label.grid(row=1, column=0, padx=5, pady=5)
+password_entry = tk.Entry(admin_frame)
+password_entry.grid(row=1, column=1, padx=5, pady=5)
+
+name_label = tk.Label(admin_frame, text="Name:")
+name_label.grid(row=2, column=0, padx=5, pady=5)
+name_entry = tk.Entry(admin_frame)
+name_entry.grid(row=2, column=1, padx=5, pady=5)
+
+status_label = tk.Label(admin_frame, text="Status:")
+status_label.grid(row=3, column=0, padx=5, pady=5)
+status_entry = tk.Entry(admin_frame)
+status_entry.grid(row=3, column=1, padx=5, pady=5)
+
+role_label = tk.Label(admin_frame, text="Role:")
+role_label.grid(row=4, column=0, padx=5, pady=5)
+role_entry = tk.Entry(admin_frame)
+role_entry.grid(row=4, column=1, padx=5, pady=5)
+
+
+# Create buttons for user actions
+add_user_button = tk.Button(root, text="Add New User", command=add_user_button_click)
+add_user_button.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
+
+print_users_button = tk.Button(root, text="Print Users", command=print_users_button_click)
+print_users_button.grid(row=6, column=0, columnspan=2, padx=5, pady=5)
+
+# Create a Text widget for displaying users
+output_text = tk.Text(root, height=10, width=60)
+output_text.grid(row=7, column=0, columnspan=2, padx=5, pady=5)
+
+username_to_delete_label = tk.Label(root, text="Username to Delete:")
+username_to_delete_label.grid(row=8, column=0, padx=5, pady=5)
+username_to_delete_entry = tk.Entry(root)
+username_to_delete_entry.grid(row=8, column=1, padx=5, pady=5)
+delete_user_button = tk.Button(root, text="Delete User", command=delete_user_username)
+delete_user_button.grid(row=9, column=0, columnspan=2, padx=5, pady=5)
+
+# Create the database and check for the admin user
+create_db()
+check_user_admin()
+
+root.mainloop()
