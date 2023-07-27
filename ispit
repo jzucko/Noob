@@ -76,7 +76,7 @@ def check_user_admin():
         cursor.execute(select_table_query_login, (admin_user[0],admin_user[1]))
         records=cursor.fetchone()
         cursor.close()
-        #print(admin_user[0],records[1])
+        
         if admin_user[0] != records[1]:
             try:
                 sc=sqlite3.connect(database_name)
@@ -173,8 +173,9 @@ def print_user():
  
  
             
-# Function to handle the Add New User button click
+
 def add_user_button_click():
+    #dodavanje korisnika tk
     global username_entry, password_entry, name_entry, status_entry, role_entry
     username = username_entry.get()
     password = password_entry.get()
@@ -189,15 +190,16 @@ def add_user_button_click():
         cursor.execute(insert_into_table_query, new_user)
         sc.commit()
         cursor.close()
-        messagebox.showinfo("Success", "User added successfully!")
+        messagebox.showinfo("Uspješno ste dodali nogo korisnika. ")
     except sqlite3.Error as err:
-        messagebox.showerror("Error", f"Error adding user: {err}")
+        messagebox.showerror("Dogodila se greška {err}")
     finally:
         if sc:
             sc.close()
 
-# Function to handle the Print Users button click
+
 def print_users_button_click():
+    #ispis korisnika tk
     try:
         sc = sqlite3.connect(database_name)
         cursor = sc.cursor()
@@ -209,53 +211,46 @@ def print_users_button_click():
         for record in records:
             output_text.insert(tk.END, str(record) + "\n")
     except sqlite3.Error as err:
-        messagebox.showerror("Error", f"Error fetching users: {err}")
+        messagebox.showerror("Dogodila se greška {err}")
     finally:
         if sc:
             sc.close()
-            
+
+#ovo nije dobro, treba dovršiti
 def login():
     username = username_entry.get()
     password = password_entry.get()
 
-    # Verify the login credentials (You can add your logic here)
-    # For demonstration purposes, we'll use a simple condition
     if username == "admin" and password == "password":
         show_admin_features()
     else:
-        messagebox.showerror("Error", "Invalid credentials")
-
+        messagebox.showerror("Nepoznati podaci.")
 def show_admin_features():
     login_frame.pack_forget()  # Hide the login frame
     admin_frame.pack()  # Show the admin frame
 
-# Tkinter GUI setup
+
 root = tk.Tk()
 root.title("Smart Key")
 
-# Create login frame
+#ovaj dio nije dobaar
 login_frame = tk.Frame(root)
 login_frame.pack(padx=20, pady=20)
-
 username_label = tk.Label(login_frame, text="Username:")
 username_label.pack()
 username_entry = tk.Entry(login_frame)
 username_entry.pack()
-
 password_label = tk.Label(login_frame, text="Password:")
 password_label.pack()
-password_entry = tk.Entry(login_frame, show="*")  # Show * for password entry
+password_entry = tk.Entry(login_frame, show="*") 
 password_entry.pack()
-
 login_button = tk.Button(login_frame, text="Login", command=login)
 login_button.pack()
 
-# Create admin frame
 admin_frame = tk.Frame(root)
-# Hide the admin frame initially, it will be shown after successful login
 admin_frame.pack_forget()
 
-# Create Labels and Entry widgets for user input
+# dodavanje korisnika
 username_label = tk.Label(admin_frame, text="Username:")
 username_label.grid(row=0, column=0, padx=5, pady=5)
 username_entry = tk.Entry(admin_frame)
@@ -282,14 +277,14 @@ role_entry = tk.Entry(admin_frame)
 role_entry.grid(row=4, column=1, padx=5, pady=5)
 
 
-# Create buttons for user actions
+# button za dodavanje usera
 add_user_button = tk.Button(root, text="Add New User", command=add_user_button_click)
 add_user_button.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
 
 print_users_button = tk.Button(root, text="Print Users", command=print_users_button_click)
 print_users_button.grid(row=6, column=0, columnspan=2, padx=5, pady=5)
 
-# Create a Text widget for displaying users
+# button za ispis usera
 output_text = tk.Text(root, height=10, width=60)
 output_text.grid(row=7, column=0, columnspan=2, padx=5, pady=5)
 
@@ -300,7 +295,7 @@ username_to_delete_entry.grid(row=8, column=1, padx=5, pady=5)
 delete_user_button = tk.Button(root, text="Delete User", command=delete_user_username)
 delete_user_button.grid(row=9, column=0, columnspan=2, padx=5, pady=5)
 
-# Create the database and check for the admin user
+
 create_db()
 check_user_admin()
 
